@@ -27,3 +27,7 @@ Thumbs.db
 
 # mn CLI dApp wallet cache (regenerated on every deploy/call)
 midnight-level-db/
+
+# Contract assets synced from ../contract/src/managed by the
+# syncContractAssets Gradle task — sourced not stored.
+app/src/main/assets/managed/

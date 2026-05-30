@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,21 +16,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
-// Counter card — the starter's custom UI surface for the on-chain count.
-//
-// Phase 4 (this file): renders a state-aware card that branches on
-// CounterUiState. The Deploy and Increment actions are stubs that
-// flip ViewModel state without touching the chain.
-//
-// Phase 5: replaces the stubs with real MidnightContract.deploy() and
-// .call() invocations, persists the deployed address per network, and
-// subscribes to ledger state via the indexer for live count sync.
+// CounterCard — the starter's custom UI for the on-chain counter.
+// Branches on CounterUiState; the busy flag from the ViewModel
+// disables buttons + shows a spinner while a deploy or increment
+// transaction is in flight.
 @Composable
 fun CounterCard(
     modifier: Modifier = Modifier,
     viewModel: CounterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val busy by viewModel.busy.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Card(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -41,33 +40,69 @@ fun CounterCard(
                 text = "Counter contract",
                 style = MaterialTheme.typography.titleMedium,
             )
-            CounterCardBody(state = state, viewModel = viewModel)
+
+            when (val s = state) {
+                CounterUiState.NotReady -> NotReadyBody()
+                CounterUiState.ReadyToDeploy -> ReadyToDeployBody(busy = busy, onDeploy = viewModel::deploy)
+                is CounterUiState.Deployed -> DeployedBody(state = s, busy = busy, onIncrement = viewModel::increment)
+            }
+
+            if (busy) CircularProgressIndicator()
+            if (error != null) {
+                Text(
+                    text = "Last error: $error",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CounterCardBody(
-    state: CounterUiState,
-    viewModel: CounterViewModel,
-) {
-    when (state) {
-        CounterUiState.NotReady -> Text(
-            text = "Forge a sigil and register dust above first.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+private fun NotReadyBody() {
+    Text(
+        text = "Forge a sigil above, then fund the wallet and register dust.\n\n" +
+            "On localnet, fund + register-dust steps are:\n" +
+            "    mn airdrop 1000 --wallet <addr> --network undeployed\n" +
+            "    mn dust register --wallet <addr> --network undeployed\n\n" +
+            "(Copy the wallet address from the panel above.)",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+}
 
-        CounterUiState.ReadyToDeploy -> Text(
-            text = "(Phase 5 will wire MidnightContract.deploy() here. " +
-                "Tap target: deploy a fresh counter on the current network and " +
-                "persist its address in EncryptedSharedPreferences.)",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        is CounterUiState.Deployed -> Text(
-            text = "(Phase 5 will subscribe to ledger state here. " +
-                "Deployed address: ${state.address}. Render count + Increment button.)",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+@Composable
+private fun ReadyToDeployBody(busy: Boolean, onDeploy: () -> Unit) {
+    Text(
+        text = "Sigil + funded wallet detected. Deploy a counter contract on " +
+            "the current network. The deployed address persists in " +
+            "EncryptedSharedPreferences so subsequent runs reuse it.",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Button(onClick = onDeploy, enabled = !busy) {
+        Text(text = "Deploy counter")
     }
+}
+
+@Composable
+private fun DeployedBody(
+    state: CounterUiState.Deployed,
+    busy: Boolean,
+    onIncrement: () -> Unit,
+) {
+    Text(
+        text = "Deployed at:\n0x${state.address}",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    Text(
+        text = state.count?.toString() ?: "—",
+        style = MaterialTheme.typography.displayLarge,
+    )
+    Button(onClick = onIncrement, enabled = !busy) {
+        Text(text = "Increment")
+    }
+    Text(
+        text = "Count auto-refreshes from chain every ~4s.",
+        style = MaterialTheme.typography.bodySmall,
+    )
 }

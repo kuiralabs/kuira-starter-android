@@ -47,6 +47,32 @@ kotlin {
     }
 }
 
+// ─── Contract assets sync ──────────────────────────────────────────
+// Copy ../contract/src/managed/counter/ into the app's assets/ so the
+// SDK's MidnightContract.fromAssets() can load index.js + the proving
+// keys at runtime.
+//
+// Why hand-rolled (not the com.midnight.kuira.contract plugin):
+// the plugin was authored during alpha02 and has not shipped to
+// Maven Central as of the kuira-starter-android repo's alpha01 pin.
+// When it ships, swap this whole block for the one-liner:
+//
+//   plugins { id("com.midnight.kuira.contract") version "0.1.0-alpha02" }
+//
+// and the plugin will discover ../contract/src/managed/* automatically.
+val syncContractAssets by tasks.registering(Copy::class) {
+    from(rootProject.layout.projectDirectory.dir("contract/src/managed"))
+    into(layout.projectDirectory.dir("src/main/assets/managed"))
+    // Strip the per-contract intermediate dir layer so the final
+    // structure under assets is `managed/<contractName>/contract/index.js`
+    // — matches what MidnightContract.fromAssets() expects.
+    includeEmptyDirs = false
+}
+
+tasks.named("preBuild") {
+    dependsOn(syncContractAssets)
+}
+
 dependencies {
     // Kuira SDK — one dep, full graph (Sigil identity, embedded wallet,
     // contract runtime, indexer, design system). See README "Pinned
@@ -69,6 +95,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.security.crypto)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 }
