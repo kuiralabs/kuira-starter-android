@@ -98,7 +98,7 @@ app/                                      ← the Android app
   src/main/java/.../
     KuiraStarterApp.kt                      @HiltAndroidApp
     MainActivity.kt                         AppCompatActivity + Compose
-    di/PasskeyConfigModule.kt               REPLACE_ME rpId
+    di/PasskeyConfigModule.kt               Passkey rpId binding
     data/CounterContract.kt                 MidnightContract wrapper
     data/ContractAddressStore.kt            EncryptedSharedPreferences per network
     ui/CounterScreen.kt                     SigilPanel + WalletPanel + CounterCard
@@ -156,8 +156,8 @@ fingerprint at `https://<rpId>/.well-known/assetlinks.json`.
 
 Checklist:
 
-1. `PASSKEY_RP_ID` in `di/PasskeyConfigModule.kt` points at a domain
-   you control (no longer `REPLACE_ME_…`).
+1. `PASSKEY_RP_ID` in `di/PasskeyConfigModule.kt` is the domain you
+   control.
 2. `https://<rpId>/.well-known/assetlinks.json` returns HTTP 200 with
    `Content-Type: application/json` (no redirect, no auth wall, no
    stale CDN cache from a previous app's content).
@@ -208,9 +208,9 @@ before this template was cut:
 
 | Friction | Root cause | Where fixed |
 |---|---|---|
-| KSP version `2.3.20-2.0.4` not found | Recipe 1 quoted a version that doesn't exist on Maven Central. | Recipe 1 now shows `2.3.6` matching the SDK's actual pin (Fix #1 in the docs DevX punch-list). |
-| `PasskeyConfig` unresolved import | Recipe 1 referenced `com.midnight.kuira.core.identity.PasskeyConfig` but the actual package is `…identity.passkey.PasskeyConfig`. | Recipe 1 import path corrected (Fix #1). |
-| `SigilStatusPanel(activity = activity)` — no such parameter | Recipe 2 invented an API that doesn't exist on the real composable. | Recipe 2 now shows the actual signature (no `activity`; `MainActivity` extends `AppCompatActivity` so the panel finds a `FragmentActivity` host on its own). Fixes #1 and #5. |
+| KSP version `2.3.20-2.0.4` not found | Recipe 1 quoted a version that doesn't exist on Maven Central. | Recipe 1 now shows `2.3.6` matching the SDK's actual pin. |
+| `PasskeyConfig` unresolved import | Recipe 1 referenced `com.midnight.kuira.core.identity.PasskeyConfig` but the actual package is `…identity.passkey.PasskeyConfig`. | Recipe 1 import path corrected. |
+| `SigilStatusPanel(activity = activity)` — no such parameter | Recipe 2 invented an API that doesn't exist on the real composable. | Recipe 2 now shows the actual signature (no `activity`; `MainActivity` extends `AppCompatActivity` so the panel finds a `FragmentActivity` host on its own). |
 
 This starter is, in effect, the canonical answer to "does the
 documentation actually let a stranger build a working dApp." If you hit
