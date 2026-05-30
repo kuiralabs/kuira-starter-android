@@ -91,7 +91,7 @@ private fun DeployedBody(
     onIncrement: () -> Unit,
 ) {
     Text(
-        text = "Deployed at:\n0x${state.address}",
+        text = "Deployed at:\n${state.address}",
         style = MaterialTheme.typography.bodySmall,
     )
     Text(

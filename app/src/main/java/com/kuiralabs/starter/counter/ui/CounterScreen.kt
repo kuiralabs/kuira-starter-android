@@ -26,12 +26,12 @@ import com.midnight.kuira.dapp.wallet.WalletStatusPanel
 //
 //   3. CounterCard  — this starter's custom card. Owns the contract
 //      lifecycle (Deploy / Increment) and renders the on-chain count.
-//      Phase 5 wires this to MidnightContract.deploy() + .call().
 //
 // The screen does NOT manage state across the three sections — each
-// panel owns its own ViewModel and StateFlow. Coordination happens
-// via the SDK's PanelBar (not used here yet; the starter shows the
-// raw composition so consumers can see how the pieces fit together).
+// panel owns its own ViewModel and StateFlow and is composable
+// independently. The starter shows the raw composition deliberately
+// so consumers can see how the pieces fit together before they reach
+// for a more opinionated host wrapper.
 @Composable
 fun CounterScreen(modifier: Modifier = Modifier) {
     Column(

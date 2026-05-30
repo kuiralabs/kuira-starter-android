@@ -9,11 +9,12 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // Per-network store of the deployed counter contract address.
-// EncryptedSharedPreferences-backed because the address, while not
-// secret on its own, is the binding between this user's sigil and a
-// specific deployed contract — exfiltrating it could let a hostile
-// app silently swap it for an attacker-controlled address before
-// MidnightContract calls go out.
+// EncryptedSharedPreferences-backed to stay consistent with the SDK's
+// own storage pattern (auth tokens, sigil state) and to treat the
+// user→contract binding as a sensitive default. The address is not a
+// secret on its own — it's public on chain — but encrypting at rest
+// avoids it showing up plaintext in backup snapshots or post-mortem
+// device dumps.
 //
 // Key shape: "counter.<network-name>" (counter.UNDEPLOYED, counter.PREPROD).
 // Different networks get independent slots so switching network in the

@@ -27,6 +27,11 @@ android {
             isMinifyEnabled = false
         }
         release {
+            // TODO before shipping: turn on R8 + ProGuard. The starter
+            // ships minify-off so newcomers see exactly the byte code
+            // their source compiled to. A production app should set
+            // isMinifyEnabled = true with a `proguardFiles(...)` line
+            // listing the SDK's consumer rules and your own keep rules.
             isMinifyEnabled = false
         }
     }
@@ -48,9 +53,9 @@ kotlin {
 }
 
 // ─── Contract assets sync ──────────────────────────────────────────
-// Copy ../contract/src/managed/counter/ into the app's assets/ so the
-// SDK's MidnightContract.fromAssets() can load index.js + the proving
-// keys at runtime.
+// Mirror ../contract/src/managed/counter/ into the app's assets/ so
+// CounterContract can open contract/index.js + keys/*.verifier via
+// context.assets.open(...) at runtime.
 //
 // Why hand-rolled (not the com.midnight.kuira.contract plugin):
 // the plugin was authored during alpha02 and has not shipped to
@@ -63,9 +68,9 @@ kotlin {
 val syncContractAssets by tasks.registering(Copy::class) {
     from(rootProject.layout.projectDirectory.dir("contract/src/managed"))
     into(layout.projectDirectory.dir("src/main/assets/managed"))
-    // Strip the per-contract intermediate dir layer so the final
-    // structure under assets is `managed/<contractName>/contract/index.js`
-    // — matches what MidnightContract.fromAssets() expects.
+    // Preserve the compactc-emitted layout (managed/<name>/contract/,
+    // managed/<name>/keys/, managed/<name>/zkir/) — CounterContract
+    // reads paths off that shape directly.
     includeEmptyDirs = false
 }
 

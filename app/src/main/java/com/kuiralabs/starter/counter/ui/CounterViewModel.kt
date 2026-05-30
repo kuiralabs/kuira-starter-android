@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuiralabs.starter.counter.data.ContractAddressStore
 import com.kuiralabs.starter.counter.data.CounterContract
+import com.midnight.kuira.core.compact.MidnightContract
 import com.midnight.kuira.core.network.MidnightNetwork
 import com.midnight.kuira.sdk.MidnightSdk
 import com.midnight.kuira.sdk.walletruntime.MidnightSdkProvider
@@ -56,6 +57,10 @@ class CounterViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // Network selector lives on the SDK's WalletStatusPanel; this
+    // ViewModel does not currently observe network changes. The
+    // starter pins UNDEPLOYED (localnet) — multi-network coordination
+    // is a future hook, not a starter feature.
     private val activeNetwork = MutableStateFlow(MidnightNetwork.UNDEPLOYED)
 
     private var pollJob: Job? = null
@@ -65,10 +70,6 @@ class CounterViewModel @Inject constructor(
             sdkProvider.sdk.combine(activeNetwork) { sdk, net -> sdk to net }
                 .collect { (sdk, network) -> recomputeState(sdk, network) }
         }
-    }
-
-    fun onNetworkChanged(network: MidnightNetwork) {
-        activeNetwork.value = network
     }
 
     private fun recomputeState(sdk: MidnightSdk?, network: MidnightNetwork) {
@@ -94,11 +95,10 @@ class CounterViewModel @Inject constructor(
 
     fun increment() {
         val sdk = sdkProvider.sdk.value ?: return
-        val network = activeNetwork.value
         val address = (state.value as? CounterUiState.Deployed)?.address ?: return
         runAction {
             CounterContract.increment(context, sdk, address)
-            val freshCount = CounterContract.readCount(context, sdk, address)
+            val freshCount = CounterContract.readCount(readHandleFor(sdk, address))
             _state.update { CounterUiState.Deployed(address = address, count = freshCount) }
             // No need to recompute state here — the polling loop will
             // continue from the next tick with the same address.
@@ -119,12 +119,29 @@ class CounterViewModel @Inject constructor(
         }
     }
 
+    // Cached read-only MidnightContract for the currently-deployed
+    // address. Building one means opening the contract JS asset stream
+    // and normalizing ES module syntax — re-doing that every 4s for
+    // the polling loop is wasteful. Re-created only when the address
+    // changes (deploy on a new network, restore on a fresh device).
+    private var readHandle: MidnightContract? = null
+    private var readHandleAddress: String? = null
+
+    private fun readHandleFor(sdk: MidnightSdk, address: String): MidnightContract {
+        if (readHandle == null || readHandleAddress != address) {
+            readHandle = CounterContract.buildReadHandle(context, sdk, address)
+            readHandleAddress = address
+        }
+        return readHandle!!
+    }
+
     private fun startPolling(sdk: MidnightSdk, address: String) {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
+            val handle = readHandleFor(sdk, address)
             while (true) {
                 try {
-                    val fresh = CounterContract.readCount(context, sdk, address)
+                    val fresh = CounterContract.readCount(handle)
                     _state.update { current ->
                         if (current is CounterUiState.Deployed && current.address == address) {
                             current.copy(count = fresh)
@@ -144,6 +161,8 @@ class CounterViewModel @Inject constructor(
     private fun stopPolling() {
         pollJob?.cancel()
         pollJob = null
+        readHandle = null
+        readHandleAddress = null
     }
 
     companion object {

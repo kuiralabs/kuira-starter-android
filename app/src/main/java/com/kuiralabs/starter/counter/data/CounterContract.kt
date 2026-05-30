@@ -55,10 +55,13 @@ internal object CounterContract {
         handle.call(CIRCUIT_INCREMENT)
     }
 
-    suspend fun readCount(context: Context, sdk: MidnightSdk, address: String): Long {
-        // Read-only handle: no cpk needed, no verifier keys. Lighter
-        // build for the polling path.
-        val handle = buildHandle(context, sdk, address = address, forWrite = false)
-        return handle.ledger().getUint64(LEDGER_FIELD_COUNT)
-    }
+    // Read-only handle: no cpk, no verifier keys. The polling loop
+    // wants a single one of these for the lifetime of a deployed
+    // address — re-creating per tick reopens the contract JS stream
+    // every 4 seconds for no win.
+    fun buildReadHandle(context: Context, sdk: MidnightSdk, address: String): MidnightContract =
+        buildHandle(context, sdk, address = address, forWrite = false)
+
+    suspend fun readCount(handle: MidnightContract): Long =
+        handle.ledger().getUint64(LEDGER_FIELD_COUNT)
 }

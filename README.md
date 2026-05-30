@@ -22,8 +22,9 @@ on the repo page to spin up your own dApp without forking.
   via polling. Compiled artifacts are committed so the app builds
   out-of-box.
 
-The whole demo is intentionally small (~350 LOC Kotlin + 6 lines
-Compact) so you can read every file in a single sitting.
+The whole demo is intentionally small (~250 LOC Kotlin code + ~6 lines
+Compact, plus inline comments) so you can read every file in a single
+sitting.
 
 ---
 
@@ -42,9 +43,9 @@ Open in Android Studio. To actually run on a device, complete the four
 
 ## Before you run
 
-The starter ships with three placeholders that you MUST replace before
-the Sigil-forge path will succeed on a device. Each is a single string
-in a single file:
+The starter ships with four prep steps that you MUST complete before
+the Sigil-forge path will succeed on a device. The first three are
+single-string edits; the fourth is a terminal command:
 
 | What | Where | Currently |
 |---|---|---|
@@ -136,11 +137,11 @@ in the SDK-native path when it ships.
 
 | Gap | Workaround in the starter | Closes when |
 |---|---|---|
-| **No `Flow<LedgerState>` for live contract state.** SDK alpha01 only exposes one-shot `MidnightContract.ledger().getUint64()`. | `CounterViewModel` runs a 4s polling loop while in the `Deployed` state. Single-line swap to `flow.collect` when a Flow API lands. | SDK adds `MidnightContract.ledgerFlow(...)` (target: alpha02 wishlist). |
-| **Contract Gradle plugin (`com.midnight.kuira.contract`) not on Maven Central.** | `app/build.gradle.kts` has a hand-rolled `syncContractAssets` Copy task (same shape as the SDK docs' Recipe 3 alpha01 fallback). | SDK ships `com.midnight.kuira.contract` to Maven Central (target: alpha02). |
-| **No in-app airdrop / faucet button.** | Funding is a terminal step (`mn airdrop ... --network undeployed`). | When/if the SDK ships a `DebugAirdropService` for localnet. |
-| **`androidx.security:security-crypto` is deprecated by Google industry-wide.** | Starter uses it for `ContractAddressStore` because the alternative (Tink-backed DataStore) isn't standardised yet. Warnings at compile time are expected. | Google's recommended replacement stabilises. |
-| **`SigilStatusPanel` defaults to a passkey rpId at compile time.** | Build will succeed with `REPLACE_ME_WITH_YOUR_DOMAIN.example`, but Forge will hit `RP_ID_MISMATCH` on a real device until the rpId points at a real domain whose `assetlinks.json` lists this app. | A future `kuiraDoctor` Gradle task catches this at build time (target: alpha03 wishlist). |
+| **No `Flow<LedgerState>` for live contract state.** SDK alpha01 only exposes one-shot `MidnightContract.ledger().getUint64()`. | `CounterViewModel` runs a 4s polling loop while in the `Deployed` state. Single-line swap to `flow.collect` when a Flow API lands. | A Flow-based contract-state API ships in the SDK. |
+| **Contract Gradle plugin (`com.midnight.kuira.contract`) not on Maven Central.** | `app/build.gradle.kts` has a hand-rolled `syncContractAssets` Copy task (same shape as the SDK docs' Recipe 3 alpha01 fallback). | SDK ships `com.midnight.kuira.contract` to Maven Central. |
+| **No in-app airdrop / faucet button.** | Funding is a terminal step (`mn airdrop ... --network undeployed`). | The SDK ships an in-app airdrop helper for localnet, or upstream tooling subsumes the step. |
+| **`androidx.security:security-crypto` is deprecated by Google industry-wide.** | Starter uses it for `ContractAddressStore` because the consensus migration target (Tink-backed DataStore) is still moving. Compile-time warnings are expected. | Google's recommended replacement stabilises. |
+| **`SigilStatusPanel` defaults to a passkey rpId at compile time.** | Build will succeed with `REPLACE_ME_WITH_YOUR_DOMAIN.example`, but Forge will hit `RP_ID_MISMATCH` on a real device until the rpId points at a real domain whose `assetlinks.json` lists this app. | A preflight Gradle task catches this at build time. |
 
 ---
 
@@ -207,21 +208,20 @@ the right place to fix the documentation gap.
 ## Roadmap
 
 What's missing in the starter today is missing because the SDK doesn't
-yet expose it. The fixes will land in the SDK and the starter will
-absorb them at the next alpha bump:
+yet expose it. As the SDK closes each gap, the starter absorbs the new
+API at the next pin bump.
 
-- **`MidnightContract.ledgerFlow(...)`** — replaces the 4s polling loop with a
-  push-based Flow. [SDK wishlist coming for alpha02.]
-- **Contract Gradle plugin on Maven Central** — replaces `syncContractAssets`
-  with one plugin id. [Targeted for alpha02.]
-- **`kuiraDoctor` preflight Gradle task** — catches placeholder rpId,
-  unreachable `assetlinks.json`, runtime mismatches at build time.
-  [Targeted for alpha03 — DevX wishlist #8.]
-- **Localnet `DebugAirdropService`** — `BuildConfig.DEBUG`-gated in-app
-  fund button so the starter doesn't have to send users to a terminal.
-  [SDK wishlist coming.]
+- **Flow-based contract state** — would replace the 4s polling loop
+  with a push-based subscription.
+- **Contract Gradle plugin on Maven Central** — would replace the
+  hand-rolled `syncContractAssets` task with a single plugin id.
+- **Preflight Gradle task** — would catch placeholder rpId,
+  unreachable `assetlinks.json`, and Compact runtime mismatches at
+  build time instead of as runtime exceptions.
+- **Localnet in-app airdrop** — `BuildConfig.DEBUG`-gated fund button
+  so the starter doesn't have to send users to a terminal.
 
-See the full list of open wishlist items at
+Track these and other gaps at
 [kuiralabs/kuira-sdk-android/issues](https://github.com/kuiralabs/kuira-sdk-android/issues).
 
 ---
