@@ -1,0 +1,29 @@
+pragma language_version 0.23.0;
+
+// Kuira Starter — minimal counter contract.
+//
+// A single on-chain integer that anyone can bump by one. Mirrors the
+// universal "Hello World" of smart contracts (Solidity, Move, Cairo
+// all start here) so newcomers to Midnight can focus on the SDK
+// integration story without compositional contract complexity.
+//
+// What the dApp does:
+//   1. Reads the current count from on-chain ledger state.
+//   2. Calls increment() — a no-witness, no-argument circuit.
+//   3. After the transaction confirms, re-reads count, sees +1.
+//
+// No witnesses, no privacy controls, no access checks — purely
+// public state for demonstration. A production contract would add
+// at minimum a per-caller rate limit or an attestation gate.
+
+import CompactStandardLibrary;
+
+// `Counter` is a standard library ledger type that wraps a Uint<64>
+// with .increment() / .read() helpers. Using it (vs a bare Uint<64>)
+// shows readers the conventional Compact pattern.
+export ledger count: Counter;
+
+// The only circuit: bump count by 1.
+export circuit increment(): [] {
+    count.increment(1);
+}
