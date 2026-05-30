@@ -55,8 +55,10 @@ single-string edits; the fourth is a terminal command:
 | Wallet funding (localnet) | terminal — `mn` CLI | manual step, see below |
 
 The `assetlinks.json` content must declare your app's signing
-fingerprint. See the Kuira docs: [Add Kuira to an Android project §
-Hosting assetlinks.json](https://kuiralabs.github.io/kuira-sdk-android/recipes/add-kuira-to-an-android-project/).
+fingerprint. Full walkthrough — including release-keystore generation,
+multi-fingerprint setup, and hosting on GitHub Pages / Vercel /
+Cloudflare: [Bind your app to a passkey
+domain](https://kuiralabs.github.io/kuira-sdk-android/recipes/bind-your-app-to-a-passkey-domain/).
 
 ---
 
@@ -167,9 +169,10 @@ Checklist:
 4. **Uninstall + reinstall the app** after the assetlinks file lands;
    `adb install -r` doesn't refresh passkey state on some devices.
 
-See SDK docs:
-[Recipe 1 § Hosting assetlinks.json](https://kuiralabs.github.io/kuira-sdk-android/recipes/add-kuira-to-an-android-project/)
-for the canonical assetlinks.json shape (replace the fingerprint).
+Full walkthrough — keystore generation, release-signing config,
+multi-fingerprint assetlinks.json, hosting on GitHub Pages / Vercel /
+Cloudflare:
+[Bind your app to a passkey domain](https://kuiralabs.github.io/kuira-sdk-android/recipes/bind-your-app-to-a-passkey-domain/).
 
 **Q: Deploy hangs at "Balancing".**
 A: The wallet has zero DUST. Tap **Register dust** in the wallet panel,
