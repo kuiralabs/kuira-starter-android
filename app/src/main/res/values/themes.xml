@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppCompat parent so MainActivity can subclass AppCompatActivity
+         (required by SigilStatusPanel for biometric prompt hosting).
+         Material 3 Compose primitives are sourced from MaterialTheme {} in the
+         Composable layer, not from this XML theme. -->
+    <style name="Theme.KuiraStarter" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>
