@@ -147,13 +147,29 @@ in the SDK-native path when it ships.
 
 ## FAQ
 
-**Q: Forge fails with `RP_ID_MISMATCH`.**
-A: Either `assetlinks.json` isn't reachable at
-`https://<rpId>/.well-known/assetlinks.json`, or the SHA-256 fingerprint
-in that file doesn't match this app's signing cert. The SDK docs'
+**Q: Forge fails with `RP_ID_MISMATCH` / `PRF authentication failed` /
+"credential creation failed" / silent biometric prompt dismissal.**
+A: All four are surface symptoms of the same underlying problem —
+the rpId you set in `PasskeyConfigModule.kt` does not match an
+`assetlinks.json` that lists this app's package + signing-cert
+fingerprint at `https://<rpId>/.well-known/assetlinks.json`.
+
+Checklist:
+
+1. `PASSKEY_RP_ID` in `di/PasskeyConfigModule.kt` points at a domain
+   you control (no longer `REPLACE_ME_…`).
+2. `https://<rpId>/.well-known/assetlinks.json` returns HTTP 200 with
+   `Content-Type: application/json` (no redirect, no auth wall, no
+   stale CDN cache from a previous app's content).
+3. The fingerprint in that file matches `./gradlew signingReport`
+   output for the build you installed (debug vs release have
+   different fingerprints — re-publish when you swap configs).
+4. **Uninstall + reinstall the app** after the assetlinks file lands;
+   `adb install -r` doesn't refresh passkey state on some devices.
+
+See SDK docs:
 [Recipe 1 § Hosting assetlinks.json](https://kuiralabs.github.io/kuira-sdk-android/recipes/add-kuira-to-an-android-project/)
-has a copy-paste assetlinks.json with the right shape — replace the
-fingerprint with your own (`./gradlew signingReport` to print it).
+for the canonical assetlinks.json shape (replace the fingerprint).
 
 **Q: Deploy hangs at "Balancing".**
 A: The wallet has zero DUST. Tap **Register dust** in the wallet panel,
