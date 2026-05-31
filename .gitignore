@@ -13,6 +13,13 @@ local.properties
 *.iml
 captures/
 
+# Signing material — release keystores and keystore.properties must
+# never be committed. Move them outside the repo (e.g. ~/keystores/)
+# and reference them via gradle.properties or env vars at build time.
+*.keystore
+*.jks
+keystore.properties
+
 # Compact / npm
 node_modules/
 npm-debug.log*

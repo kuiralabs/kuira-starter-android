@@ -21,8 +21,7 @@ object PasskeyConfigModule {
     // RP_ID_MISMATCH until this points at a real, reachable domain
     // whose assetlinks.json lists this app's package + signing cert.
     //
-    // See: kuiralabs.github.io/kuira-sdk-android/recipes/add-kuira-to-an-android-project/
-    //   § "Hosting assetlinks.json"
+    // See: https://kuiralabs.github.io/kuira-sdk-android/recipes/bind-your-app-to-a-passkey-domain/
     private const val PASSKEY_RP_ID = "REPLACE_ME_WITH_YOUR_DOMAIN.example"
 
     @Provides
