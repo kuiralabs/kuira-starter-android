@@ -2,8 +2,11 @@ package com.kuiralabs.starter.counter.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +40,11 @@ fun CounterScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            // safeDrawing combines status bar + display cutout + nav bar.
+            // Without this, on devices with camera notches (Pixel 8 / S24
+            // punch-holes, iPhone-style cutouts) the headline gets bisected
+            // by the cutout and clipped under the status bar.
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
