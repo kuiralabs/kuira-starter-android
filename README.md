@@ -9,6 +9,10 @@ and `rpId`, host `assetlinks.json`, hit Run.
 This repository is also a GitHub template — click **Use this template**
 on the repo page to spin up your own dApp without forking.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Kuira Starter counter dApp on-device — sigil identity pill, wallet balance pill, and the on-chain counter with an Increment button" width="300">
+</p>
+
 ---
 
 ## What this gives you
