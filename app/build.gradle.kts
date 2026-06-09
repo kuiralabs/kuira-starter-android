@@ -57,12 +57,12 @@ kotlin {
 // CounterContract can open contract/index.js + keys/*.verifier via
 // context.assets.open(...) at runtime.
 //
-// Why hand-rolled (not the com.midnight.kuira.contract plugin):
+// Why hand-rolled (not the io.github.kuiralabs.contract plugin):
 // the plugin was authored during alpha02 and has not shipped to
 // Maven Central as of the kuira-starter-android repo's alpha01 pin.
 // When it ships, swap this whole block for the one-liner:
 //
-//   plugins { id("com.midnight.kuira.contract") version "0.1.0-alpha02" }
+//   plugins { id("io.github.kuiralabs.contract") version "0.1.0-alpha02" }
 //
 // and the plugin will discover ../contract/src/managed/* automatically.
 val syncContractAssets by tasks.registering(Copy::class) {

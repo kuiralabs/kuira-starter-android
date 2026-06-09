@@ -31,9 +31,9 @@ committed to the repo so the app builds out of the box; rebuild only
 if you edit `counter.compact`.
 
 ```bash
-# direct compactc invocation
-~/.compact/versions/0.31.0/aarch64-darwin/compactc \
-  src/counter.compact src/managed/counter
+# canonical: the Midnight devtools wrapper picks the right compactc
+# version automatically (per the matrix). Same as `npm run compile`.
+compact compile src/counter.compact src/managed/counter
 
 # or use the iterative dev loop (watch + auto-deploy)
 mn dev .
@@ -61,16 +61,17 @@ mn contract state --address <addr> \
     --wallet dev-alice --network undeployed         # count: 1
 ```
 
-## When `compactc` bumps
+## When the Compact toolchain bumps
 
 The committed artifacts go stale. To upgrade:
 
-1. Install the new compactc into `~/.compact/versions/<new>/`.
-2. Bump `engines.compactc` in `package.json`.
-3. Bump `@midnight-ntwrk/compact-runtime` to match (run
-   `compactc --runtime-version` to confirm).
-4. Bump `pragma language_version` in `counter.compact` (run
-   `compactc --language-version` to confirm).
-5. `rm -rf src/managed/counter && compactc src/counter.compact src/managed/counter`.
-6. Re-verify with the localnet flow above.
-7. Commit the regenerated artifacts.
+1. `compact update` to install the new toolchain version.
+2. `compact --version` and `compact compile --runtime-version` /
+   `--language-version` to confirm the new triple.
+3. Bump `engines.compactc` in this `package.json` to the new compiler.
+4. Bump `@midnight-ntwrk/compact-runtime` dep to the new runtime.
+5. Bump `pragma language_version` in `counter.compact` to the new
+   language version.
+6. `rm -rf src/managed/counter && npm run compile`.
+7. Re-verify with the localnet flow above.
+8. Commit the regenerated artifacts.
