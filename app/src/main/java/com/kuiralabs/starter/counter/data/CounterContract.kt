@@ -1,33 +1,44 @@
 package com.kuiralabs.starter.counter.data
 
 import android.content.Context
+import com.midnight.kuira.core.compact.ContractCallStage
 import com.midnight.kuira.core.compact.MidnightContract
+import com.midnight.kuira.core.compact.proving.ProvingKeyManager
 import com.midnight.kuira.sdk.MidnightSdk
 
 // Thin wrapper around MidnightContract for the counter — loads assets,
-// holds wiring constants, gives the ViewModel a tight three-method
-// surface (deploy / increment / readCount).
+// holds wiring constants, gives the ViewModel a tight surface
+// (deploy / increment / readCount).
 //
-// "Counter" is the per-contract name under app/src/main/assets/managed/
-// (which the syncContractAssets Gradle task populates from
-// ../contract/src/managed/counter/). Changing this requires changing
-// counter.compact's filename + the Copy task source path.
+// The io.github.kuiralabs.contract Gradle plugin syncs the compiled
+// contract into the app's assets in the SDK's canonical layout: the
+// runtime JS as runtime/counter-contract.js and the circuit keys as
+// keys/increment.{prover,verifier,bzkir}. Changing NAME requires
+// changing the kuiraContract { source } path in build.gradle.kts.
 internal object CounterContract {
 
     private const val NAME = "counter"
     private const val CIRCUIT_INCREMENT = "increment"
     private const val LEDGER_FIELD_COUNT = "count"
 
-    private fun assetPath(suffix: String): String = "managed/$NAME/$suffix"
+    private const val CONTRACT_JS_ASSET = "runtime/$NAME-contract.js"
+    private const val VERIFIER_ASSET = "keys/$CIRCUIT_INCREMENT.verifier"
 
     private fun loadVerifierKeys(context: Context): Map<String, ByteArray> {
-        // The deploy path requires every circuit's verifier key bytes so
-        // they can be embedded in the on-chain contract artifact. Call
-        // path does not need them — fetched fresh from chain.
+        // The deploy path embeds every circuit's verifier key in the
+        // on-chain contract artifact. Calls don't need it — it's
+        // fetched fresh from chain.
         val verifierBytes = context.assets
-            .open(assetPath("keys/$CIRCUIT_INCREMENT.verifier"))
+            .open(VERIFIER_ASSET)
             .use { it.readBytes() }
         return mapOf(CIRCUIT_INCREMENT to verifierBytes)
+    }
+
+    // Stage the contract's proving keys from assets/keys into the SDK's
+    // keysDir so the local prover finds increment.prover. Idempotent —
+    // gated internally on an APK stamp + per-file presence check.
+    private fun installProvingKeys(context: Context) {
+        ProvingKeyManager(context).installCircuitKeysFromAssets()
     }
 
     private fun buildHandle(
@@ -37,7 +48,7 @@ internal object CounterContract {
         forWrite: Boolean,
     ): MidnightContract = MidnightContract.create(sdk.config) {
         name = NAME
-        contractJs = context.assets.open(assetPath("contract/index.js"))
+        contractJs = context.assets.open(CONTRACT_JS_ASSET)
         if (address != null) this.address = address
         if (forWrite) {
             coinPublicKey = sdk.coinPublicKey
@@ -45,14 +56,25 @@ internal object CounterContract {
         }
     }
 
-    suspend fun deploy(context: Context, sdk: MidnightSdk): String {
+    suspend fun deploy(
+        context: Context,
+        sdk: MidnightSdk,
+        onProgress: (suspend (ContractCallStage) -> Unit)? = null,
+    ): String {
+        installProvingKeys(context)
         val handle = buildHandle(context, sdk, address = null, forWrite = true)
-        return handle.deploy().contractAddress
+        return handle.deploy(onProgress = onProgress).contractAddress
     }
 
-    suspend fun increment(context: Context, sdk: MidnightSdk, address: String) {
+    suspend fun increment(
+        context: Context,
+        sdk: MidnightSdk,
+        address: String,
+        onProgress: (suspend (ContractCallStage) -> Unit)? = null,
+    ) {
+        installProvingKeys(context)
         val handle = buildHandle(context, sdk, address = address, forWrite = true)
-        handle.call(CIRCUIT_INCREMENT)
+        handle.call(CIRCUIT_INCREMENT, onProgress = onProgress)
     }
 
     // Read-only handle: no cpk, no verifier keys. The polling loop

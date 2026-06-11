@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kuiralabs.starter.counter.data.ContractAddressStore
 import com.kuiralabs.starter.counter.data.CounterContract
+import com.midnight.kuira.core.compact.ContractCallStage
 import com.midnight.kuira.core.compact.MidnightContract
 import com.midnight.kuira.core.network.MidnightNetwork
 import com.midnight.kuira.sdk.MidnightSdk
@@ -36,11 +37,10 @@ import javax.inject.Inject
 //      the visible count.
 //
 // Plus a polling loop that re-reads count every COUNT_POLL_INTERVAL_MS
-// while the card is in the Deployed state. The SDK at alpha01 does
-// not expose a public Flow-based subscription for contract state, so
-// polling is the only consumer-level option today. When the SDK adds
-// MidnightContract.ledgerFlow() (alpha02+ wishlist), this loop
-// collapses to a single Flow.collect.
+// while the card is in the Deployed state. The SDK doesn't expose a
+// Flow-based subscription for contract state, so polling is the only
+// consumer-level option; if a ledger Flow is added later, this loop
+// collapses to a single collect.
 @HiltViewModel
 class CounterViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -53,6 +53,14 @@ class CounterViewModel @Inject constructor(
 
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
+
+    // Live stage of the in-flight contract call (execute → prove →
+    // balance → submit), fed straight from MidnightContract's
+    // onProgress. Drives the SDK's ContractCallProgressBar. Null when
+    // idle. A deploy/increment takes 30–120s, so a staged bar reads far
+    // better than a bare spinner.
+    private val _callStage = MutableStateFlow<ContractCallStage?>(null)
+    val callStage: StateFlow<ContractCallStage?> = _callStage.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -87,7 +95,7 @@ class CounterViewModel @Inject constructor(
         val sdk = sdkProvider.sdk.value ?: return
         val network = activeNetwork.value
         runAction {
-            val address = CounterContract.deploy(context, sdk)
+            val address = CounterContract.deploy(context, sdk) { _callStage.value = it }
             addressStore.put(network, address)
             recomputeState(sdk, network)
         }
@@ -97,7 +105,7 @@ class CounterViewModel @Inject constructor(
         val sdk = sdkProvider.sdk.value ?: return
         val address = (state.value as? CounterUiState.Deployed)?.address ?: return
         runAction {
-            CounterContract.increment(context, sdk, address)
+            CounterContract.increment(context, sdk, address) { _callStage.value = it }
             val freshCount = CounterContract.readCount(readHandleFor(sdk, address))
             _state.update { CounterUiState.Deployed(address = address, count = freshCount) }
             // No need to recompute state here — the polling loop will
@@ -115,6 +123,7 @@ class CounterViewModel @Inject constructor(
                 _error.value = t.message ?: t::class.simpleName ?: "Unknown error"
             } finally {
                 _busy.value = false
+                _callStage.value = null
             }
         }
     }

@@ -15,12 +15,13 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object PasskeyConfigModule {
 
-    // Local-dev rpId so the existing forged sigil on emulator-5554
-    // continues to sign-in against the same passkey. Do NOT commit
-    // this change to the template — revert to REPLACE_ME before
-    // pushing. The Kuira-org assetlinks.json at
-    // https://kuiralabs.github.io/.well-known/assetlinks.json
-    // already lists com.kuiralabs.starter.counter as a target.
+    // REPLACE_ME — set this to YOUR passkey domain when you make the app
+    // yours: the host serving your `.well-known/assetlinks.json`, which must
+    // list your applicationId + signing SHA-256. This default points at the
+    // Kuira org domain, which works out of the box for the starter's default
+    // applicationId (com.kuiralabs.starter.counter) so you can run it
+    // immediately — change both together. See the README and the "Bind your
+    // app to a passkey domain" recipe.
     private const val PASSKEY_RP_ID = "kuiralabs.github.io"
 
     @Provides

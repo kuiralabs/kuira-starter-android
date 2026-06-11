@@ -74,6 +74,13 @@ deploy until both are present.
 
 **On localnet (`MidnightNetwork.UNDEPLOYED`):**
 
+> **Node version matters.** This starter is tested against
+> **`midnight-node:0.22.5`** — the `mn localnet` default — which ships
+> on-chain Compact runtime **0.16.0**, the runtime the bundled `counter`
+> contract is compiled for. On an older node (`≤ 0.22.3`, runtime
+> `0.15.0`), **Deploy counter** fails with a runtime-version mismatch.
+> Stick with the default (`0.22.5`) and you're fine.
+
 1. Open the app, tap **Forge sigil** in the panel.
 2. After forge, copy the wallet address from `WalletStatusPanel`.
 3. In a terminal:
@@ -119,7 +126,7 @@ app/                                      ← the Android app
 
 | Layer | Version |
 |---|---|
-| Kuira SDK | `0.1.0-alpha01` (Maven Central) |
+| Kuira SDK | `0.1.0-alpha03` (Maven Central) |
 | AGP | `8.13.2` |
 | Kotlin | `2.3.20` |
 | KSP | `2.3.6` |
@@ -137,14 +144,13 @@ The Compact toolchain triple moves independently. See
 
 ## Known limitations today
 
-These are gaps the SDK itself doesn't close at alpha01 — the starter
-works around them visibly so consumers see the pattern and can swap
-in the SDK-native path when it ships.
+These are gaps the SDK itself doesn't close yet — the starter works
+around them visibly so consumers see the pattern and can swap in the
+SDK-native path when it lands.
 
 | Gap | Workaround in the starter | Closes when |
 |---|---|---|
-| **No `Flow<LedgerState>` for live contract state.** SDK alpha01 only exposes one-shot `MidnightContract.ledger().getUint64()`. | `CounterViewModel` runs a 4s polling loop while in the `Deployed` state. Single-line swap to `flow.collect` when a Flow API lands. | A Flow-based contract-state API ships in the SDK. |
-| **Contract Gradle plugin (`io.github.kuiralabs.contract`) not on Maven Central.** | `app/build.gradle.kts` has a hand-rolled `syncContractAssets` Copy task (same shape as the SDK docs' Recipe 3 alpha01 fallback). | SDK ships `io.github.kuiralabs.contract` to Maven Central. |
+| **No `Flow<LedgerState>` for live contract state.** The SDK only exposes one-shot `MidnightContract.ledger().getUint64()`. | `CounterViewModel` runs a 4s polling loop while in the `Deployed` state. Single-line swap to `flow.collect` when a Flow API lands. | A Flow-based contract-state API ships in the SDK. |
 | **No in-app airdrop / faucet button.** | Funding is a terminal step (`mn airdrop ... --network undeployed`). | The SDK ships an in-app airdrop helper for localnet, or upstream tooling subsumes the step. |
 | **`androidx.security:security-crypto` is deprecated by Google industry-wide.** | Starter uses it for `ContractAddressStore` because the consensus migration target (Tink-backed DataStore) is still moving. Compile-time warnings are expected. | Google's recommended replacement stabilises. |
 | **`SigilStatusPanel` defaults to a passkey rpId at compile time.** | Build will succeed with `REPLACE_ME_WITH_YOUR_DOMAIN.example`, but Forge will hit `RP_ID_MISMATCH` on a real device until the rpId points at a real domain whose `assetlinks.json` lists this app. | A preflight Gradle task catches this at build time. |

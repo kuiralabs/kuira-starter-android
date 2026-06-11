@@ -15,7 +15,7 @@ androidxSecurityCrypto = "1.1.0-alpha07"
 # Kuira SDK — published on Maven Central as io.github.kuiralabs:*.
 # A single dapp-ui dep transitively pulls in the full graph (midnight-sdk,
 # wallet-runtime, identity, auth, compact-engine, indexer, designsystem).
-kuira = "0.1.0-alpha01"
+kuira = "0.1.0-alpha03"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "androidxAppcompat" }

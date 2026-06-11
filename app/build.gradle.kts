@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    id("io.github.kuiralabs.contract") version "0.1.0-alpha03"
 }
 
 android {
@@ -52,30 +53,14 @@ kotlin {
     }
 }
 
-// ─── Contract assets sync ──────────────────────────────────────────
-// Mirror ../contract/src/managed/counter/ into the app's assets/ so
-// CounterContract can open contract/index.js + keys/*.verifier via
-// context.assets.open(...) at runtime.
-//
-// Why hand-rolled (not the io.github.kuiralabs.contract plugin):
-// the plugin was authored during alpha02 and has not shipped to
-// Maven Central as of the kuira-starter-android repo's alpha01 pin.
-// When it ships, swap this whole block for the one-liner:
-//
-//   plugins { id("io.github.kuiralabs.contract") version "0.1.0-alpha02" }
-//
-// and the plugin will discover ../contract/src/managed/* automatically.
-val syncContractAssets by tasks.registering(Copy::class) {
-    from(rootProject.layout.projectDirectory.dir("contract/src/managed"))
-    into(layout.projectDirectory.dir("src/main/assets/managed"))
-    // Preserve the compactc-emitted layout (managed/<name>/contract/,
-    // managed/<name>/keys/, managed/<name>/zkir/) — CounterContract
-    // reads paths off that shape directly.
-    includeEmptyDirs = false
-}
-
-tasks.named("preBuild") {
-    dependsOn(syncContractAssets)
+// ─── Contract assets ───────────────────────────────────────────────
+// The io.github.kuiralabs.contract plugin syncs the compiled Compact
+// artifacts from the contract source into the app's assets before each
+// build: the runtime JS as assets/runtime/counter-contract.js and the
+// circuit keys as assets/keys/increment.{prover,verifier,bzkir}.
+// CounterContract reads those canonical paths at runtime.
+kuiraContract {
+    source.set("../contract/src/managed/counter")
 }
 
 dependencies {

@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.midnight.kuira.dapp.ContractCallProgressBar
 
 // CounterCard — the starter's custom UI for the on-chain counter.
 // Branches on CounterUiState; the busy flag from the ViewModel
@@ -27,6 +28,7 @@ fun CounterCard(
 ) {
     val state by viewModel.state.collectAsState()
     val busy by viewModel.busy.collectAsState()
+    val callStage by viewModel.callStage.collectAsState()
     val error by viewModel.error.collectAsState()
 
     Card(modifier = modifier.fillMaxWidth()) {
@@ -47,7 +49,22 @@ fun CounterCard(
                 is CounterUiState.Deployed -> DeployedBody(state = s, busy = busy, onIncrement = viewModel::increment)
             }
 
-            if (busy) CircularProgressIndicator()
+            // While a transaction is in flight, show the SDK's staged
+            // progress bar (execute → prove → balance → submit) fed by
+            // the live ContractCallStage. Before the first stage lands
+            // it's null, so fall back to a spinner for that brief gap.
+            if (busy) {
+                if (callStage == null) {
+                    CircularProgressIndicator()
+                } else {
+                    ContractCallProgressBar(
+                        stage = callStage,
+                        accent = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
             if (error != null) {
                 Text(
                     text = "Last error: $error",
