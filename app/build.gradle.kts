@@ -6,7 +6,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    id("io.github.kuiralabs.contract") version "0.1.0-alpha03"
+    id("io.github.kuiralabs.contract") version "0.1.0-alpha04"
+    // Auto `adb reverse` of the localnet ports on installDebug to a physical
+    // device — no manual step. No-op on emulators (they use 10.0.2.2).
+    id("io.github.kuiralabs.localnet") version "0.1.0-alpha04"
 }
 
 android {
@@ -61,6 +64,10 @@ kotlin {
 // CounterContract reads those canonical paths at runtime.
 kuiraContract {
     source.set("../contract/src/managed/counter")
+    // Offline bundle (#256): ship the protocol wallet proving keys in the APK so a
+    // fresh device proves without the runtime S3 download. ~33MB; downloaded once
+    // at build time into a shared Gradle cache, then staged into assets/wallet-keys.
+    bundleWalletKeys.set(true)
 }
 
 dependencies {
