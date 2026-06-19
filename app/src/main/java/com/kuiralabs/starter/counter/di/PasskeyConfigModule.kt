@@ -24,8 +24,13 @@ object PasskeyConfigModule {
     // app to a passkey domain" recipe.
     private const val PASSKEY_RP_ID = "kuiralabs.github.io"
 
+    // rpName is the label the credential carries in Google Password Manager. While
+    // this app shares the Kuira org rpId with the other example apps, they all share
+    // ONE passkey credential — whichever forges first stamps its rpName for ALL of
+    // them — so it's the brand "Kuira Sigil", not this app's name, for a consistent
+    // GPM entry. When you make the app yours (your own rpId above), set your own.
     @Provides
     @Singleton
     fun providePasskeyConfig(): PasskeyConfig =
-        PasskeyConfig(rpId = PASSKEY_RP_ID, rpName = "Kuira Starter")
+        PasskeyConfig(rpId = PASSKEY_RP_ID, rpName = "Kuira Sigil")
 }
