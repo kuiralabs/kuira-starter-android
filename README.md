@@ -17,14 +17,17 @@ on the repo page to spin up your own dApp without forking.
 
 ## What this gives you
 
-- **Identity** — `SigilStatusPanel` from the SDK. One biometric prompt
-  forges a DID + wallet seed (passkey-PRF derived).
-- **Wallet** — `WalletStatusPanel` from the SDK. NIGHT + DUST balance,
-  receive-QR, dust registration.
+- **Identity + Wallet** — the SDK's `PanelBar` in floating mode drops two
+  draggable chips over your content: a **sigil** chip (one biometric forges a
+  passkey-PRF DID + wallet seed) and a **wallet** chip (NIGHT + DUST balance,
+  receive-QR, dust registration, the network picker, and settings). Tap a chip to
+  expand its sheet; drag it to dock at a screen edge.
 - **Contract** — a 6-line counter in Compact (`contract/src/counter.compact`).
-  Deploy on first run, increment with a single circuit call, read state
-  via polling. Compiled artifacts are committed so the app builds
-  out-of-box.
+  Deploy on first run, increment with a single circuit call, and read state
+  **reactively** via `MidnightContract.observeLedger()` — the count updates on
+  each on-chain change, no polling. Deploy a fresh counter or disconnect from the
+  card; switch the wallet chip's network and the counter follows it. Compiled
+  artifacts are committed so the app builds out-of-box.
 
 The whole demo is intentionally small (~250 LOC Kotlin code + ~6 lines
 Compact, plus inline comments) so you can read every file in a single
@@ -114,9 +117,9 @@ app/                                      ← the Android app
     di/PasskeyConfigModule.kt               Passkey rpId binding
     data/CounterContract.kt                 MidnightContract wrapper
     data/ContractAddressStore.kt            EncryptedSharedPreferences per network
-    ui/CounterScreen.kt                     SigilPanel + WalletPanel + CounterCard
-    ui/CounterCard.kt                       deploy + increment + count
-    ui/CounterViewModel.kt                  state machine + 4s polling loop
+    ui/CounterScreen.kt                     floating PanelBar overlay + CounterCard
+    ui/CounterCard.kt                       deploy / increment / deploy-new / disconnect
+    ui/CounterViewModel.kt                  state machine + reactive count stream (observeLedger)
     ui/CounterUiState.kt                    sealed interface
 ```
 
@@ -150,7 +153,6 @@ SDK-native path when it lands.
 
 | Gap | Workaround in the starter | Closes when |
 |---|---|---|
-| **No `Flow<LedgerState>` for live contract state.** The SDK only exposes one-shot `MidnightContract.ledger().getUint64()`. | `CounterViewModel` runs a 4s polling loop while in the `Deployed` state. Single-line swap to `flow.collect` when a Flow API lands. | A Flow-based contract-state API ships in the SDK. |
 | **No in-app airdrop / faucet button.** | Funding is a terminal step (`mn airdrop ... --network undeployed`). | The SDK ships an in-app airdrop helper for localnet, or upstream tooling subsumes the step. |
 | **`androidx.security:security-crypto` is deprecated by Google industry-wide.** | Starter uses it for `ContractAddressStore` because the consensus migration target (Tink-backed DataStore) is still moving. Compile-time warnings are expected. | Google's recommended replacement stabilises. |
 | **`SigilStatusPanel` defaults to a passkey rpId at compile time.** | Build will succeed with `REPLACE_ME_WITH_YOUR_DOMAIN.example`, but Forge will hit `RP_ID_MISMATCH` on a real device until the rpId points at a real domain whose `assetlinks.json` lists this app. | A preflight Gradle task catches this at build time. |
@@ -190,10 +192,11 @@ or run `mn dust register --wallet <addr> --network undeployed`, then
 wait ~30 seconds and retry deploy.
 
 **Q: The count never updates after Increment.**
-A: The polling loop fetches every 4 seconds; the tx itself takes one
-block to land (~3s localnet, ~6s PREPROD). If the count is still stale
-after 30s, check `adb logcat | grep -i counter` for indexer connection
-errors — the indexer URL in `WalletConfig` may not be reachable.
+A: `CounterViewModel` collects `MidnightContract.observeLedger()`, which
+refreshes on each new block — the tx itself takes one block to land (~3s
+localnet, ~6s PREPROD). If the count is still stale after ~30s, check
+`adb logcat | grep -i counter` for indexer connection errors — the indexer
+URL in `WalletConfig` may not be reachable.
 
 **Q: Build fails with `Manifest merger failed: minSdkVersion 28 cannot
 be smaller than version 30`.**
@@ -240,8 +243,6 @@ What's missing in the starter today is missing because the SDK doesn't
 yet expose it. As the SDK closes each gap, the starter absorbs the new
 API at the next pin bump.
 
-- **Flow-based contract state** — would replace the 4s polling loop
-  with a push-based subscription.
 - **Contract Gradle plugin on Maven Central** — would replace the
   hand-rolled `syncContractAssets` task with a single plugin id.
 - **Preflight Gradle task** — would catch placeholder rpId,
