@@ -29,7 +29,7 @@ on the repo page to spin up your own dApp without forking.
   card; switch the wallet chip's network and the counter follows it. Compiled
   artifacts are committed so the app builds out-of-box.
 
-The whole demo is intentionally small (~250 LOC Kotlin code + ~6 lines
+The whole demo is intentionally small (~700 LOC Kotlin code + ~6 lines
 Compact, plus inline comments) so you can read every file in a single
 sitting.
 
@@ -110,7 +110,7 @@ contract/                                 ← the on-chain piece
   README.md                                 rebuild + verify recipe
 
 app/                                      ← the Android app
-  build.gradle.kts                          syncContractAssets Copy task
+  build.gradle.kts                          io.github.kuiralabs.contract Gradle plugin
   src/main/java/.../
     KuiraStarterApp.kt                      @HiltAndroidApp
     MainActivity.kt                         AppCompatActivity + Compose
@@ -243,8 +243,6 @@ What's missing in the starter today is missing because the SDK doesn't
 yet expose it. As the SDK closes each gap, the starter absorbs the new
 API at the next pin bump.
 
-- **Contract Gradle plugin on Maven Central** — would replace the
-  hand-rolled `syncContractAssets` task with a single plugin id.
 - **Preflight Gradle task** — would catch placeholder rpId,
   unreachable `assetlinks.json`, and Compact runtime mismatches at
   build time instead of as runtime exceptions.
