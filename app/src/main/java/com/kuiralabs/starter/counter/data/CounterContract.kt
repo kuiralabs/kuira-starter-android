@@ -5,6 +5,8 @@ import com.midnight.kuira.core.compact.ContractCallStage
 import com.midnight.kuira.core.compact.MidnightContract
 import com.midnight.kuira.core.compact.proving.ProvingKeyManager
 import com.midnight.kuira.sdk.MidnightSdk
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 // Thin wrapper around MidnightContract for the counter — loads assets,
 // holds wiring constants, gives the ViewModel a tight surface
@@ -77,13 +79,19 @@ internal object CounterContract {
         handle.call(CIRCUIT_INCREMENT, onProgress = onProgress)
     }
 
-    // Read-only handle: no cpk, no verifier keys. The polling loop
-    // wants a single one of these for the lifetime of a deployed
-    // address — re-creating per tick reopens the contract JS stream
-    // every 4 seconds for no win.
+    // Read-only handle: no cpk, no verifier keys. The count stream
+    // (observeCount) + the post-increment read share a single one of
+    // these for the lifetime of a deployed address — rebuilding reopens
+    // the contract JS stream for no win.
     fun buildReadHandle(context: Context, sdk: MidnightSdk, address: String): MidnightContract =
         buildHandle(context, sdk, address = address, forWrite = false)
 
     suspend fun readCount(handle: MidnightContract): Long =
         handle.ledger().getUint64(LEDGER_FIELD_COUNT)
+
+    // Reactive count: emits the current value immediately, then a fresh one each
+    // time the contract's on-chain state changes — driven by the chain's block
+    // stream (MidnightContract.observeLedger, #255), no polling.
+    fun observeCount(handle: MidnightContract): Flow<Long> =
+        handle.observeLedger().map { it.getUint64(LEDGER_FIELD_COUNT) }
 }

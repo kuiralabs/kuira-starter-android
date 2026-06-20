@@ -13,10 +13,10 @@ import com.midnight.kuira.sdk.walletruntime.MidnightSdkProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,11 +36,9 @@ import javax.inject.Inject
 //   3. increment() — call the increment circuit; on success, refresh
 //      the visible count.
 //
-// Plus a polling loop that re-reads count every COUNT_POLL_INTERVAL_MS
-// while the card is in the Deployed state. The SDK doesn't expose a
-// Flow-based subscription for contract state, so polling is the only
-// consumer-level option; if a ledger Flow is added later, this loop
-// collapses to a single collect.
+// Plus a reactive count stream: while the card is Deployed it collects
+// CounterContract.observeCount (MidnightContract.observeLedger, #255), so the
+// count updates on each on-chain change instead of on a 4s timer.
 @HiltViewModel
 class CounterViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -65,17 +63,18 @@ class CounterViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Network selector lives on the SDK's WalletStatusPanel; this
-    // ViewModel does not currently observe network changes. The
-    // starter pins UNDEPLOYED (localnet) — multi-network coordination
-    // is a future hook, not a starter feature.
-    private val activeNetwork = MutableStateFlow(MidnightNetwork.UNDEPLOYED)
+    // The active network is the SDK's durable preference (#285): the wallet pill in
+    // PanelBar drives it, and the per-network contract address follows. The screen
+    // seeds PanelBar from selectedNetwork and writes picks back through selectNetwork,
+    // so switching network reloads the right contract (or ReadyToDeploy).
+    val selectedNetwork: StateFlow<MidnightNetwork> get() = sdkProvider.selectedNetwork
+    fun selectNetwork(network: MidnightNetwork) = sdkProvider.selectNetwork(network)
 
-    private var pollJob: Job? = null
+    private var countJob: Job? = null
 
     init {
         viewModelScope.launch {
-            sdkProvider.sdk.combine(activeNetwork) { sdk, net -> sdk to net }
+            sdkProvider.sdk.combine(sdkProvider.selectedNetwork) { sdk, net -> sdk to net }
                 .collect { (sdk, network) -> recomputeState(sdk, network) }
         }
     }
@@ -88,12 +87,12 @@ class CounterViewModel @Inject constructor(
             else -> CounterUiState.Deployed(address = persisted, count = null)
         }
         _state.value = next
-        if (sdk != null && persisted != null) startPolling(sdk, persisted) else stopPolling()
+        if (sdk != null && persisted != null) startObserving(sdk, persisted) else stopObserving()
     }
 
     fun deploy() {
         val sdk = sdkProvider.sdk.value ?: return
-        val network = activeNetwork.value
+        val network = sdkProvider.selectedNetwork.value
         runAction {
             val address = CounterContract.deploy(context, sdk) { _callStage.value = it }
             addressStore.put(network, address)
@@ -106,7 +105,7 @@ class CounterViewModel @Inject constructor(
     // just stop pointing at it. Use to abandon a contract you no longer want
     // (e.g. after a localnet reset left a stale address).
     fun disconnect() {
-        val network = activeNetwork.value
+        val network = sdkProvider.selectedNetwork.value
         addressStore.clear(network)
         recomputeState(sdkProvider.sdk.value, network)
     }
@@ -118,8 +117,8 @@ class CounterViewModel @Inject constructor(
             CounterContract.increment(context, sdk, address) { _callStage.value = it }
             val freshCount = CounterContract.readCount(readHandleFor(sdk, address))
             _state.update { CounterUiState.Deployed(address = address, count = freshCount) }
-            // No need to recompute state here — the polling loop will
-            // continue from the next tick with the same address.
+            // No need to recompute state here — the count stream keeps
+            // running for the same address and reflects later changes too.
         }
     }
 
@@ -140,9 +139,10 @@ class CounterViewModel @Inject constructor(
 
     // Cached read-only MidnightContract for the currently-deployed
     // address. Building one means opening the contract JS asset stream
-    // and normalizing ES module syntax — re-doing that every 4s for
-    // the polling loop is wasteful. Re-created only when the address
-    // changes (deploy on a new network, restore on a fresh device).
+    // and normalizing ES module syntax — the count stream + the
+    // post-increment read share one handle rather than rebuilding it.
+    // Re-created only when the address changes (deploy on a new network,
+    // restore on a fresh device).
     private var readHandle: MidnightContract? = null
     private var readHandleAddress: String? = null
 
@@ -154,41 +154,30 @@ class CounterViewModel @Inject constructor(
         return readHandle!!
     }
 
-    private fun startPolling(sdk: MidnightSdk, address: String) {
-        pollJob?.cancel()
-        pollJob = viewModelScope.launch {
+    private fun startObserving(sdk: MidnightSdk, address: String) {
+        countJob?.cancel()
+        countJob = viewModelScope.launch {
             val handle = readHandleFor(sdk, address)
-            while (true) {
-                try {
-                    val fresh = CounterContract.readCount(handle)
+            CounterContract.observeCount(handle)
+                // observeLedger is resilient (skips transient indexer hiccups, degrades to
+                // polling if the block stream drops), so a thrown terminal error is rare; if it
+                // happens we just stop this stream — the next recompute restarts it. We do NOT
+                // surface it to _error: no error banner for a background read.
+                .catch { /* non-fatal */ }
+                .collect { fresh ->
                     _state.update { current ->
                         if (current is CounterUiState.Deployed && current.address == address) {
                             current.copy(count = fresh)
                         } else current
                     }
-                } catch (_: Throwable) {
-                    // Polling errors are non-fatal — next tick retries.
-                    // We deliberately do NOT surface to _error here so
-                    // a transient indexer hiccup doesn't flash an
-                    // error banner under the user every few seconds.
                 }
-                delay(COUNT_POLL_INTERVAL_MS)
-            }
         }
     }
 
-    private fun stopPolling() {
-        pollJob?.cancel()
-        pollJob = null
+    private fun stopObserving() {
+        countJob?.cancel()
+        countJob = null
         readHandle = null
         readHandleAddress = null
-    }
-
-    companion object {
-        // Localnet blocks land every ~3s; PREPROD every ~6s. 4s is the
-        // middle of the road — a bit eager on PREPROD, a bit slow on
-        // localnet, but a single value beats per-network tuning for a
-        // starter.
-        private const val COUNT_POLL_INTERVAL_MS = 4_000L
     }
 }

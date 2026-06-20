@@ -139,7 +139,7 @@ private fun DeployedBody(
         }
     }
     Text(
-        text = "Count auto-refreshes from chain every ~4s.",
+        text = "Count updates live from chain.",
         style = MaterialTheme.typography.bodySmall,
     )
 }
