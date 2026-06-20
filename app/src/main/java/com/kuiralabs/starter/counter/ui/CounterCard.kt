@@ -2,6 +2,7 @@ package com.kuiralabs.starter.counter.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -9,6 +10,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,7 +48,13 @@ fun CounterCard(
             when (val s = state) {
                 CounterUiState.NotReady -> NotReadyBody()
                 CounterUiState.ReadyToDeploy -> ReadyToDeployBody(busy = busy, onDeploy = viewModel::deploy)
-                is CounterUiState.Deployed -> DeployedBody(state = s, busy = busy, onIncrement = viewModel::increment)
+                is CounterUiState.Deployed -> DeployedBody(
+                    state = s,
+                    busy = busy,
+                    onIncrement = viewModel::increment,
+                    onDeployNew = viewModel::deploy,
+                    onDisconnect = viewModel::disconnect,
+                )
             }
 
             // While a transaction is in flight, show the SDK's staged
@@ -106,6 +114,8 @@ private fun DeployedBody(
     state: CounterUiState.Deployed,
     busy: Boolean,
     onIncrement: () -> Unit,
+    onDeployNew: () -> Unit,
+    onDisconnect: () -> Unit,
 ) {
     Text(
         text = "Deployed at:\n${state.address}",
@@ -117,6 +127,16 @@ private fun DeployedBody(
     )
     Button(onClick = onIncrement, enabled = !busy) {
         Text(text = "Increment")
+    }
+    // Secondary actions: spin up a fresh counter (new address, starts at 0),
+    // or just forget this one (e.g. after a localnet reset stranded the address).
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick = onDeployNew, enabled = !busy) {
+            Text(text = "Deploy new")
+        }
+        TextButton(onClick = onDisconnect, enabled = !busy) {
+            Text(text = "Disconnect")
+        }
     }
     Text(
         text = "Count auto-refreshes from chain every ~4s.",

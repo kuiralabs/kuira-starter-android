@@ -43,4 +43,10 @@ class ContractAddressStore @Inject constructor(
     fun put(network: MidnightNetwork, address: String) {
         prefs.edit().putString(keyFor(network), address).apply()
     }
+
+    // Forget the deployed address for a network — drops the user→contract
+    // binding so the card returns to ReadyToDeploy (deploy a fresh one).
+    fun clear(network: MidnightNetwork) {
+        prefs.edit().remove(keyFor(network)).apply()
+    }
 }

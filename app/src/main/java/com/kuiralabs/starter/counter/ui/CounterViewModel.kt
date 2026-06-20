@@ -101,6 +101,16 @@ class CounterViewModel @Inject constructor(
         }
     }
 
+    // Forget the current contract → ReadyToDeploy, so the next deploy() makes a
+    // FRESH counter (starts at 0). The on-chain contract isn't destroyed — we
+    // just stop pointing at it. Use to abandon a contract you no longer want
+    // (e.g. after a localnet reset left a stale address).
+    fun disconnect() {
+        val network = activeNetwork.value
+        addressStore.clear(network)
+        recomputeState(sdkProvider.sdk.value, network)
+    }
+
     fun increment() {
         val sdk = sdkProvider.sdk.value ?: return
         val address = (state.value as? CounterUiState.Deployed)?.address ?: return
