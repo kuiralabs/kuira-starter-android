@@ -4,7 +4,7 @@
   "private": true,
   "description": "Counter — the universal Hello World of smart contracts, in Compact. Compiled artifacts under src/managed/counter/ are consumed by the Android app via the io.github.kuiralabs.contract Gradle plugin.",
   "scripts": {
-    "compile": "compact compile src/counter.compact src/managed/counter",
+    "compile": "compact compile +0.31.0 src/counter.compact src/managed/counter",
     "inspect": "mn contract inspect --managed src/managed/counter",
     "dev": "mn dev .",
     "deploy:localnet": "mn contract deploy --managed src/managed/counter --wallet dev-alice --network undeployed",
