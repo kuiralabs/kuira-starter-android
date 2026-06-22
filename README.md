@@ -86,17 +86,19 @@ deploy until both are present.
 
 1. Open the app, tap **Forge sigil** in the panel.
 2. After forge, copy the wallet address from `WalletStatusPanel`.
-3. In a terminal:
+3. In a terminal, airdrop NIGHT to that address:
    ```bash
-   mn airdrop 1000 --wallet <addr>      --network undeployed
-   mn dust register --wallet <addr>     --network undeployed
+   mn airdrop 1000 --wallet <addr> --network undeployed
    ```
-4. Wait ~30 seconds for DUST to appear in the wallet panel.
-5. Tap **Deploy counter**, then **Increment**.
+4. Back in the app, tap **Register dust** in the wallet panel to generate DUST
+   from that NIGHT. Do this **in-app** — the CLI's `mn dust register` takes a
+   *named* wallet from `mn wallet generate`, so it can't target the app's
+   embedded wallet address.
+5. Wait ~30 seconds for DUST to appear, then tap **Deploy counter** → **Increment**.
 
 **On PREPROD:** use the public faucet (link via the wallet panel's
-copy-address button) instead of `mn airdrop`. DUST registration is
-the same `mn dust register` command.
+copy-address button) instead of `mn airdrop`, then tap **Register dust** in
+the wallet panel — the same in-app step as localnet.
 
 ---
 
@@ -187,9 +189,10 @@ Cloudflare:
 [Bind your app to a passkey domain](https://kuiralabs.github.io/kuira-sdk-android/recipes/bind-your-app-to-a-passkey-domain/).
 
 **Q: Deploy hangs at "Balancing".**
-A: The wallet has zero DUST. Tap **Register dust** in the wallet panel,
-or run `mn dust register --wallet <addr> --network undeployed`, then
-wait ~30 seconds and retry deploy.
+A: The wallet has zero DUST. Tap **Register dust** in the wallet panel, then
+wait ~30 seconds and retry deploy. (Register in-app, not via CLI — `mn dust
+register` needs a named `mn wallet generate` wallet and can't target the app's
+embedded address.)
 
 **Q: The count never updates after Increment.**
 A: `CounterViewModel` collects `MidnightContract.observeLedger()`, which
@@ -197,6 +200,22 @@ refreshes on each new block — the tx itself takes one block to land (~3s
 localnet, ~6s PREPROD). If the count is still stale after ~30s, check
 `adb logcat | grep -i counter` for indexer connection errors — the indexer
 URL in `WalletConfig` may not be reachable.
+
+**Q: `mn localnet up` fails on Windows with `spawnSync ... cmd.exe ETIMEDOUT`.**
+A: A known `mn`-on-Windows issue. Start the stack directly instead:
+```bash
+docker compose -f ~/.midnight/localnet/compose.yml up -d
+```
+
+**Q: I'm on a physical device, or an x86_64 (Intel) emulator.**
+A: Two setup notes:
+- **Physical device:** forward the localnet ports to the phone —
+  `adb reverse tcp:9944 tcp:9944`, `adb reverse tcp:8088 tcp:8088`,
+  `adb reverse tcp:6300 tcp:6300`. A SIM-less phone has no "Install via USB";
+  `adb push` the APK and open it manually.
+- **x86_64 emulator:** works on SDK `alpha04+` (the native lib ships an x86_64
+  `.so`). On `alpha03` and earlier the lib was arm64-only, so x86_64 emulators
+  couldn't load it — use a physical device or an arm64 emulator there.
 
 **Q: Build fails with `Manifest merger failed: minSdkVersion 28 cannot
 be smaller than version 30`.**
