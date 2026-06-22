@@ -9,7 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.kuiralabs.starter.counter.ui.CounterScreen
-import com.midnight.kuira.dapp.lock.SessionLockGate
+import com.midnight.kuira.dapp.wallet.WalletAppShell
 import com.midnight.kuira.sdk.walletruntime.WalletNotifications
 import com.midnight.kuira.sdk.walletruntime.SessionLock
 import dagger.hilt.android.AndroidEntryPoint
@@ -34,7 +34,9 @@ class MainActivity : AppCompatActivity() {
             notifPermission.launch(WalletNotifications.PERMISSION)
         }
         setContent {
-            SessionLockGate {
+            // WalletAppShell = SessionLockGate (lock) + WalletOverlayHost (the full-screen
+            // Send / Receive / Settings overlays render in the activity window).
+            WalletAppShell {
                 MaterialTheme {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         CounterScreen()
