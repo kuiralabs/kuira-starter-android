@@ -35,6 +35,34 @@ sitting.
 
 ---
 
+## Prerequisites
+
+The first two are needed to build. `mn` and Docker are needed to run
+against a local Midnight network.
+
+| Tool | Install | Why |
+|---|---|---|
+| **JDK 17** | [Temurin 17](https://adoptium.net/temurin/releases/?version=17) | AGP 8.13 rejects older JDKs. A `JAVA_HOME` left pointing at JDK 11 by another project fails on the first Gradle run — check with `java -version`. |
+| **Android Studio** | [developer.android.com/studio](https://developer.android.com/studio) | Ships the Android SDK and `adb`. This starter requires **minSdk 30**. |
+| **`mn` CLI** | `npm i -g midnight-wallet-cli` | Starts the localnet stack and airdrops the test NIGHT the wallet needs. |
+| **Docker** | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | `mn localnet up` runs the node, indexer, and proof server as containers. |
+| **Compact toolchain** | see [`contract/README.md`](contract/README.md) | Optional — only to rebuild the contract. Compiled artifacts are committed, so the app builds without it. |
+
+Install the `mn` CLI:
+
+```bash
+npm i -g midnight-wallet-cli
+mn --version                                # 0.4.1 or newer
+```
+
+`midnight-wallet-cli` is community-maintained
+([nel349/midnight-wallet-cli](https://github.com/nel349/midnight-wallet-cli),
+Apache-2.0) and is not published under the `@midnight-ntwrk` scope. Match the
+package name exactly — the npm package named `midnight-cli` is an unrelated
+project and does not provide the `mn` command.
+
+---
+
 ## Quick start
 
 ```bash
@@ -59,7 +87,7 @@ single-string edits; the fourth is a terminal command:
 | `applicationId` + `namespace` | `app/build.gradle.kts` | `com.kuiralabs.starter.counter` |
 | `PASSKEY_RP_ID` | `app/src/main/java/com/kuiralabs/starter/counter/di/PasskeyConfigModule.kt` | `"REPLACE_ME_WITH_YOUR_DOMAIN.example"` |
 | `assetlinks.json` | hosted at `https://<your rpId>/.well-known/assetlinks.json` | not hosted |
-| Wallet funding (localnet) | terminal — `mn` CLI | manual step, see below |
+| Wallet funding (localnet) | terminal — `mn` CLI ([install](#prerequisites)) | manual step, see below |
 
 The `assetlinks.json` content must declare your app's signing
 fingerprint. Full walkthrough — including release-keystore generation,
@@ -85,7 +113,9 @@ deploy until both are present.
 > Stick with the default (`0.22.5`) and you're fine.
 
 1. Open the app, tap **Forge sigil** in the panel.
-2. After forge, copy the wallet address from `WalletStatusPanel`.
+2. After forge, tap the wallet chip and use its **copy-address** button to get
+   the full unshielded address. Read it from the panel, not from `adb logcat` —
+   the log line truncates it.
 3. In a terminal, airdrop NIGHT to that address:
    ```bash
    mn airdrop 1000 --wallet <addr> --network undeployed
@@ -201,11 +231,63 @@ localnet, ~6s PREPROD). If the count is still stale after ~30s, check
 `adb logcat | grep -i counter` for indexer connection errors — the indexer
 URL in `WalletConfig` may not be reachable.
 
+**Q: `mn` fails with a WebSocket connection error, or the indexer returns HTTP 404.**
+A: The indexer WebSocket needs the full GraphQL path — the root port on its own
+returns 404. Point `mn` at it:
+```bash
+mn config set network undeployed
+mn config set indexer-ws ws://127.0.0.1:8088/api/v4/graphql/ws
+```
+Endpoint keys are scoped to the network selected when you set them, so set
+`network` first, or re-set the endpoint for each network you use. An airdrop
+issued against a misconfigured indexer fails too — fix this before funding.
+
 **Q: `mn localnet up` fails on Windows with `spawnSync ... cmd.exe ETIMEDOUT`.**
 A: A known `mn`-on-Windows issue. Start the stack directly instead:
 ```bash
 docker compose -f ~/.midnight/localnet/compose.yml up -d
 ```
+Then confirm the stack is actually up before blaming the app — the node,
+indexer, and proof server each need to be reachable:
+```bash
+docker ps                                   # node, indexer, proof-server healthy
+nc -z 127.0.0.1 9944 && nc -z 127.0.0.1 8088 && nc -z 127.0.0.1 6300 \
+  && echo "node / indexer / proof-server reachable"
+```
+Ports are `9944` (node), `8088` (indexer), `6300` (proof server). From
+PowerShell, `Test-NetConnection -ComputerName 127.0.0.1 -Port 9944` checks the
+same thing.
+
+**Q: `compact update` fails to extract the compiler, and no default compiler is set.**
+A: The installer shells out to standard extraction utilities that a minimal
+WSL2 image doesn't ship. Install them, then retry:
+```bash
+sudo apt install -y unzip tar gzip curl
+compact update
+compact compile --version                   # expect 0.31.x
+```
+
+**Q: The Gradle wrapper times out downloading `gradle-8.13-bin.zip`.**
+A: The wrapper's `networkTimeout` is 10s, which a slow or proxied link can
+exceed even when the URL is reachable in a browser. Either raise it in
+`gradle/wrapper/gradle-wrapper.properties`:
+```properties
+networkTimeout=60000
+```
+or download the distribution once and point the wrapper at your local copy by
+setting `distributionUrl` to a `file:///` path to the zip.
+
+**Q: `./gradlew signingReport` reports a missing debug keystore.**
+A: Android Studio normally creates it on first run; a command-line-only setup
+has no keystore yet. Generate the standard debug one:
+```bash
+keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+  -storepass android -keypass android -alias androiddebugkey \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -dname "CN=Android Debug,O=Android,C=US"
+```
+Re-run `./gradlew signingReport` to get the SHA-256 your `assetlinks.json`
+needs.
 
 **Q: I'm on a physical device, or an x86_64 (Intel) emulator.**
 A: Two setup notes:
