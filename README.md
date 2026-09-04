@@ -218,6 +218,45 @@ multi-fingerprint assetlinks.json, hosting on GitHub Pages / Vercel /
 Cloudflare:
 [Bind your app to a passkey domain](https://kuiralabs.github.io/kuira-sdk-android/recipes/bind-your-app-to-a-passkey-domain/).
 
+**Q: Forge fails with `no create options available` (Credential Manager).**
+A: This is a *different* failure from `RP_ID_MISMATCH` — it happens
+upstream of the domain binding. Credential Manager found **no passkey
+provider willing to create a credential**, almost always because:
+
+1. **No screen lock is set on the device.** A passkey must be backed by
+   a device lock (PIN / pattern / password / biometric). With no lock,
+   every provider is sidelined and you get zero create options. Set one
+   under *Settings → Security & privacy → Device unlock → Screen lock*.
+   On an emulator you can also run
+   `adb shell locksettings set-pin 1234`.
+2. **No credential provider is enabled.** At least one passkey manager
+   must be installed and enabled under *Settings → Passwords, passkeys &
+   accounts*. Google Password Manager is preinstalled on Google-API
+   emulator images and needs a signed-in Google account to store the
+   passkey.
+
+Fix the lock (and enable/sign into a provider), then tap Forge again —
+no reinstall needed; these are device settings, not app or
+`assetlinks.json` changes.
+
+**Q: Does Forge require Google Password Manager specifically?**
+A: No. The app calls Android's **Credential Manager**
+(`androidx.credentials`), which is provider-agnostic — at the create
+ceremony the system offers whatever eligible providers are on the
+device. **Proton Pass, 1Password, Bitwarden, Dashlane**, etc. all work
+once installed and enabled as passkey providers (third-party providers
+need **Android 14+ / API 34**). Two things to know:
+
+- **The rpId binding is provider-independent.** `assetlinks.json`
+  establishes trust between your domain and the app's package + signing
+  fingerprint; the platform enforces it *before* handing off to
+  whichever provider stores the credential. Swapping managers changes
+  nothing here.
+- **Passkeys don't roam between managers.** A Sigil forged into Google
+  Password Manager lives in that vault — it won't appear in Proton Pass
+  and vice-versa. Whichever provider you pick at creation time is where
+  you'll authenticate from later.
+
 **Q: Deploy hangs at "Balancing".**
 A: The wallet has zero DUST. Tap **Register dust** in the wallet panel, then
 wait ~30 seconds and retry deploy. (Register in-app, not via CLI — `mn dust
