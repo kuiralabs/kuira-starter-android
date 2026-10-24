@@ -22,6 +22,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+    
+        <!-- Blockfrost project id for PreProd. PreProd's own indexer was decommissioned on
+             2026-10-09 and the replacement authenticates on every request, so without this
+             PreProd reads nothing. The value comes from this app's local.properties
+             (kuira.blockfrost.projectId), supplied as a placeholder by the Kuira contract
+             plugin, so the credential stays out of version control. Empty when unset, which
+             reads as "not configured" — only PreProd objects. -->
+        <meta-data
+            android:name="io.github.kuiralabs.BLOCKFROST_PROJECT_ID"
+            android:value="${blockfrostProjectId}" />
     </application>
 
 </manifest>

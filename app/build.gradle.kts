@@ -6,10 +6,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    id("io.github.kuiralabs.contract") version "0.1.0-alpha05"
+    id("io.github.kuiralabs.contract") version "0.1.0-alpha06"
     // Auto `adb reverse` of the localnet ports on installDebug to a physical
     // device — no manual step. No-op on emulators (they use 10.0.2.2).
-    id("io.github.kuiralabs.localnet") version "0.1.0-alpha05"
+    id("io.github.kuiralabs.localnet") version "0.1.0-alpha06"
 }
 
 android {

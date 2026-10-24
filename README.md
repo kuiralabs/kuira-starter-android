@@ -161,7 +161,7 @@ app/                                      ← the Android app
 
 | Layer | Version |
 |---|---|
-| Kuira SDK | `0.1.0-alpha04` (Maven Central) |
+| Kuira SDK | `0.1.0-alpha06` (Maven Central) |
 | AGP | `8.13.2` |
 | Kotlin | `2.3.20` |
 | KSP | `2.3.6` |
