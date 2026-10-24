@@ -32,6 +32,14 @@
         <meta-data
             android:name="io.github.kuiralabs.BLOCKFROST_PROJECT_ID"
             android:value="${blockfrostProjectId}" />
+
+        <!-- Dev-seed escape hatch. When this app's local.properties sets kuira.dev.seed, the
+             SDK skips the passkey ceremony and uses that 64-byte seed, so an automated run can
+             reach a known funded wallet. The SDK ignores it unless THIS app is debuggable, and
+             the value never enters the published SDK — it is this app's to supply. -->
+        <meta-data
+            android:name="io.github.kuiralabs.DEV_SEED"
+            android:value="${kuiraDevSeed}" />
     </application>
 
 </manifest>
