@@ -1,33 +1,39 @@
 <journey name="Starter: counter on-chain happy path">
   <description>
-    Every contract call the quickstart has: deploy a counter, then increment it. That is the whole
-    surface of counter.compact — one exported circuit, `increment` — so a run that deploys and
-    increments has exercised all of it.
+    Every contract call the quickstart has. counter.compact exports one circuit, `increment`, so a
+    run that deploys and increments has covered the contract.
 
-    This is the first on-chain thing anyone following the published quickstart does, which makes
-    it the worst place for a silent regression. The existing starter journeys stop at the
-    sigil-less screen; this one goes through proving, dust-fee balancing and submission, where
-    every failure found on real devices actually lives.
+    This is the first on-chain thing anyone following the published quickstart does, which makes it
+    the worst place for a silent regression. The other starter journeys stop at the sigil-less
+    screen, before proving, dust-fee balancing or submission — where every failure found on a real
+    device actually lives.
+
+    The app may arrive already holding a deployment: its contract address is part of the app state
+    restored from the cloud, so a fresh install of a wallet that has deployed before comes up
+    Deployed rather than Ready. Both are valid starting points and the journey allows either; what
+    it will not accept is a count that does not move.
 
     Preconditions this journey does NOT set up, and fails honestly without:
-    - a debuggable build whose local.properties sets kuira.dev.seed, so there is a wallet without
-      a passkey ceremony, and kuira.blockfrost.projectId, so PreProd answers at all;
+    - a debuggable build whose local.properties sets kuira.dev.seed, so there is a wallet without a
+      passkey ceremony, and kuira.blockfrost.projectId, so PreProd answers at all;
     - that wallet funded on PreProd, with dust registered.
 
-    The first run on a wallet with no checkpoint spends ~12 minutes syncing dust before the deploy
-    can pay its fee. That happens once per wallet per device.
+    A wallet with no checkpoint on this device spends several minutes syncing dust before the call
+    can pay its fee, and sits on "Balancing dust fee…" throughout. That happens once per wallet per
+    app.
 
-    NOT YET RUN end to end — the strings come from the app's own source, not from a watched run.
+    Verified end to end on PreProd 2026-10-24: increment proved in 0.12s, balanced against the
+    wallet's dust, submitted, finalized, and the on-screen count advanced.
   </description>
   <actions>
     <action>Verify the screen shows "Counter contract"</action>
-    <action>Verify the screen shows a "Deploy counter" control</action>
-    <action>Tap "Deploy counter"</action>
+    <action>If the screen shows a "Deploy counter" control, tap it and verify the screen then shows "Deployed at:"</action>
     <action>Verify the screen shows "Deployed at:"</action>
-    <action>Verify the screen does NOT show "Last error:"</action>
+    <action>Note the counter value currently shown</action>
     <action>Verify the screen shows an "Increment" control</action>
     <action>Tap "Increment"</action>
     <action>Verify the screen shows "Count updates live from chain."</action>
+    <action>Verify the counter value shown is one higher than the noted value</action>
     <action>Verify the screen does NOT show "Last error:"</action>
   </actions>
 </journey>
