@@ -1,0 +1,15 @@
+<journey name="Starter: onboarding guidance matches the docs">
+  <description>
+    The starter tells a newcomer, on screen, the exact next steps the published quickstart
+    describes: forge a sigil, then fund the wallet and register dust, with the mn commands to do
+    it. If this text drifts from the docs the two disagree and the newcomer is stuck with no
+    indication which is right — and no test would notice, because nothing else reads this string.
+  </description>
+  <actions>
+    <action>Verify the screen shows "Forge a sigil above"</action>
+    <action>Verify the screen shows "fund the wallet and register dust"</action>
+    <action>Verify the screen shows "mn airdrop"</action>
+    <action>Verify the screen shows "mn dust register"</action>
+    <action>Verify the screen shows "--network undeployed"</action>
+  </actions>
+</journey>

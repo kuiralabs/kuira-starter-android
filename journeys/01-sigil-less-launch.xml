@@ -1,0 +1,19 @@
+<journey name="Starter: sigil-less launch">
+  <description>
+    A fresh install of the quickstart app must render its screen and stay usable before any sigil
+    exists. This is the first thing anyone following the docs runs, so a regression here is the
+    worst possible first impression.
+
+    Also pins the SessionLock trap fixed in this SDK: a sigil-less session used to lock itself on
+    a screen whose only control called ensureSeedReady, which throws SigilRequiredException every
+    time when there is no sigil, so every retry failed identically and force-stopping was the only
+    way out.
+  </description>
+  <actions>
+    <action>Verify the screen shows "Kuira Starter"</action>
+    <action>Verify the screen shows "Counter contract"</action>
+    <action>Verify the screen does NOT show "LOCKED"</action>
+    <action>Verify the screen does NOT show "Authentication didn't complete"</action>
+    <action>Verify the screen does NOT show "Something went wrong"</action>
+  </actions>
+</journey>

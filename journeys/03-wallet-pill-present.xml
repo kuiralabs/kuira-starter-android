@@ -1,0 +1,12 @@
+<journey name="Starter: wallet pill renders">
+  <description>
+    The SDK's wallet pill must mount in the host app's top bar on a cold start with no sigil. If
+    WalletAppShell stops mounting it, or it throws during composition on a wallet-less session,
+    the dApp loses its entire wallet surface while the rest of the app still renders — invisible
+    to the SDK's own tests, because it only happens once a real app hosts the panel.
+  </description>
+  <actions>
+    <action>Verify the screen shows "Sigil"</action>
+    <action>Verify the screen shows "NIGHT"</action>
+  </actions>
+</journey>
