@@ -1,0 +1,54 @@
+<journey name="Starter: receive NIGHT">
+  <description>
+    The wallet must show NIGHT that somebody else sent it, and it must hand out the address they
+    sent it to. Those are the two halves of receiving, and nothing else in the suite covers either:
+    every other journey either stops before the wallet opens or watches money the app itself moved.
+
+    The funding is real and external — `mn airdrop` mints from the localnet genesis wallet while the
+    app is not running, so the balance on screen is money the app discovered rather than money it
+    was told about. `scripts/money-journeys.sh prepare` does that and prints the address it funded;
+    the journey asserts the receive screen names an address of the same family and that the balance
+    cleared the floor the script guarantees.
+
+    Localnet, not a public testnet, because `mn` is only a complete counterparty there: airdrop mints
+    from genesis in one command, while a testnet has no faucet and a wallet funded to send cannot
+    register for dust until its coin has aged an hour.
+
+    NOT covered here: NIGHT arriving while the app is in the foreground, and the background-receive
+    notification. Both need a second party sending on a timer the journey cannot drive.
+
+    Preconditions this journey does NOT set up, and fails honestly without:
+    - a debuggable build whose local.properties sets kuira.dev.seed, so there is a wallet without a
+      passkey ceremony;
+    - a ledger-8 localnet answering on the pinned endpoints (`mn localnet up`);
+    - `scripts/money-journeys.sh prepare`, which funds that wallet and prints its address;
+    - the app set to the localnet network.
+
+    Verified end to end on localnet 2026-10-24: with the app force-stopped, `mn airdrop 500` took the
+    wallet from 9,999 to 10,499 NIGHT on chain. The app was then launched cold, opened its wallet
+    from the declared dev seed with no sigil ceremony and no cloud-backup prompt, and read 10,499 —
+    money it had never been told about. The receive screen named the same address the airdrop went
+    to, and offered the `mn airdrop` line to fund it again.
+  </description>
+  <actions>
+    <action>If a notification permission prompt is shown, decline it</action>
+    <action>If a "Keep your wallet synced" backup offer is shown, choose "Not now"</action>
+    <action>Verify the screen does NOT show "A previous wallet backup was found in your cloud"</action>
+    <action>Verify the screen shows "NIGHT"</action>
+    <action>Verify the wallet shows a NIGHT balance of at least 100</action>
+    <action>Tap the wallet balance pill</action>
+    <action>Verify the screen shows "BALANCE"</action>
+    <action>Verify the screen shows "undeployed"</action>
+    <action>Verify the screen shows a "Receive" control</action>
+    <action>Tap "Receive"</action>
+    <action>Verify the screen shows "Receive NIGHT on Undeployed"</action>
+    <action>Verify the screen shows an address beginning "mn_addr_undeployed"</action>
+    <action>Verify the screen shows "tap address to copy"</action>
+    <action>Verify the screen shows "UNSHIELDED"</action>
+    <action>Verify the screen shows "SHIELDED"</action>
+    <action>Verify the screen shows "fund via cli"</action>
+    <action>Verify the screen shows a command beginning "mn airdrop"</action>
+    <action>Tap the address shown under the QR code</action>
+    <action>Verify the screen still shows "Receive NIGHT on Undeployed"</action>
+  </actions>
+</journey>

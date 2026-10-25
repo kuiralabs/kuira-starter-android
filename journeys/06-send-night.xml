@@ -1,0 +1,80 @@
+<journey name="Starter: send NIGHT">
+  <description>
+    The whole send wizard, end to end, on the only path a user has to move NIGHT: pick the token and
+    its privacy pool, address it, size it, review it, confirm it. Four screens, each of which can
+    break on its own, and the last of which spends.
+
+    The app reporting "Sent" is the app's claim. The chain's is the recipient's balance, so this
+    journey is only half the test: `scripts/money-journeys.sh prepare` records what the recipient
+    holds beforehand and prints the address to send to, and `money-journeys.sh verify 1` afterwards
+    fails unless the chain moved the NIGHT. Run both around this journey — a transaction that is
+    submitted and never lands reads exactly like a success on screen.
+
+    Two things the screen tells the truth about by omission:
+    - fees come out of Dust, not NIGHT, so there is no fee line to show and none is invented;
+    - no transaction hash is shown, because the SDK currently reports an empty one. The transaction
+      does finalize; there is just nothing on screen to look it up by, and the journey asserts what
+      is actually there rather than pinning that gap shut.
+
+    Localnet, not a public testnet: see 05-receive-night.xml. The NIGHT ping-pongs between two
+    wallets the operator controls and never leaves.
+
+    One harness trap, which is why this journey checks the address field before advancing: a single
+    `adb shell input text` of a 77-character bech32m address DROPS characters on an emulator, in the
+    middle of the string rather than at the end — 14 of 77 in one attempt, 5 in another. The
+    wizard's client-side check only looks at the prefix, so a mangled address passes it and fails
+    later inside the SDK, where it reads as a broken send rather than a broken keystroke. Type it a
+    character at a time, and verify the field before tapping Next.
+
+    Preconditions this journey does NOT set up, and fails honestly without:
+    - a debuggable build whose local.properties sets kuira.dev.seed;
+    - a ledger-8 localnet answering on the pinned endpoints (`mn localnet up`);
+    - `scripts/money-journeys.sh prepare`, which funds the wallet and prints the recipient;
+    - the app set to the localnet network.
+
+    Dust is the one precondition the journey DOES set up, because a funded wallet does not have any
+    yet and the send cannot pay its fee without it: registration is one tap in the wallet sheet, and
+    the dust it generates takes a minute or two to show up.
+
+    Verified end to end on localnet 2026-10-24, twice: dust registered and generated 153.15, both
+    proofs proved locally on the emulator, the transaction finalized in block 124ad025…, the pill
+    fell from 10,499 to 10,498 NIGHT, and `money-journeys.sh verify 1` confirmed the recipient's
+    balance moved on chain.
+  </description>
+  <actions>
+    <action>If a notification permission prompt is shown, decline it</action>
+    <action>If a "Keep your wallet synced" backup offer is shown, choose "Not now"</action>
+    <action>Tap the wallet balance pill</action>
+    <action>Verify the screen shows "undeployed"</action>
+    <action>Verify the screen shows "DUST"</action>
+    <action>If the screen shows a "Register" control, tap it and wait for the DUST figure to rise above zero</action>
+    <action>Verify the DUST figure shown is above zero</action>
+    <action>Note the NIGHT balance currently shown</action>
+    <action>Verify the screen shows a "Send" control</action>
+    <action>Tap "Send"</action>
+    <action>Verify the screen shows "SELECT TOKEN"</action>
+    <action>Verify the screen shows "Unshielded · Visible on chain"</action>
+    <action>Verify the screen shows "Shielded · Private · ZK proof"</action>
+    <action>Tap the "Unshielded · Visible on chain" row</action>
+    <action>Verify the screen shows "Send NIGHT"</action>
+    <action>Verify the screen shows "UNSHIELDED"</action>
+    <action>Verify the screen shows "TO"</action>
+    <action>Enter the recipient address printed by money-journeys.sh prepare into the address field</action>
+    <action>Verify the address field holds that recipient address in full, character for character</action>
+    <action>Tap "Next"</action>
+    <action>Verify the screen shows "Enter amount"</action>
+    <action>Verify the screen shows "Available"</action>
+    <action>Enter 1 as the amount</action>
+    <action>Tap "Continue"</action>
+    <action>Verify the screen shows "Review"</action>
+    <action>Verify the screen shows "1 NIGHT"</action>
+    <action>Verify the screen shows "Network fees are paid automatically from your Dust."</action>
+    <action>Tap "Confirm"</action>
+    <action>Verify the screen shows "Sent"</action>
+    <action>Verify the screen shows "Transaction submitted"</action>
+    <action>Verify the screen does NOT show "Send failed"</action>
+    <action>Verify the screen shows a "Done" control</action>
+    <action>Tap "Done"</action>
+    <action>Verify the NIGHT balance shown is one lower than the noted value</action>
+  </actions>
+</journey>
