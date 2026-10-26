@@ -10,11 +10,11 @@
     fails unless the chain moved the NIGHT. Run both around this journey — a transaction that is
     submitted and never lands reads exactly like a success on screen.
 
-    Two things the screen tells the truth about by omission:
-    - fees come out of Dust, not NIGHT, so there is no fee line to show and none is invented;
-    - no transaction hash is shown, because the SDK currently reports an empty one. The transaction
-      does finalize; there is just nothing on screen to look it up by, and the journey asserts what
-      is actually there rather than pinning that gap shut.
+    Fees come out of Dust, not NIGHT, so there is no fee line to show and none is invented.
+
+    The Sent screen shows the transaction's hash, the id the indexer and `mn` look it up by. The
+    journey asserts it is there; that it names the transaction that landed is what
+    `money-journeys.sh verify` and an indexer lookup of the full hash establish.
 
     Localnet, not a public testnet: see 05-receive-night.xml. The NIGHT ping-pongs between two
     wallets the operator controls and never leaves.
@@ -40,6 +40,10 @@
     proofs proved locally on the emulator, the transaction finalized in block 124ad025…, the pill
     fell from 10,499 to 10,498 NIGHT, and `money-journeys.sh verify 1` confirmed the recipient's
     balance moved on chain.
+
+    Verified again on localnet 2026-10-25 with the hash on screen: the Sent screen showed
+    49a7f1d418…3b91d3, the indexer holds that transaction in block 58277, the pill fell from
+    10,498 to 10,497 NIGHT, and `money-journeys.sh verify 1` was green.
   </description>
   <actions>
     <action>If a notification permission prompt is shown, decline it</action>
@@ -72,6 +76,8 @@
     <action>Tap "Confirm"</action>
     <action>Verify the screen shows "Sent"</action>
     <action>Verify the screen shows "Transaction submitted"</action>
+    <action>Verify the screen shows "TRANSACTION"</action>
+    <action>Verify the screen shows "Hash"</action>
     <action>Verify the screen does NOT show "Send failed"</action>
     <action>Verify the screen shows a "Done" control</action>
     <action>Tap "Done"</action>
